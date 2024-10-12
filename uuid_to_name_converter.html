@@ -5,42 +5,148 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Player UUID and Last Location Viewer</title>
     <style>
-        body { font-family: Arial, sans-serif; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
-        label { margin-top: 10px; display: block; font-weight: bold; }
+        body { 
+            font-family: Arial, sans-serif; 
+            background-color: #181818; 
+            color: #f0f0f0; 
+            margin: 0; 
+            padding: 20px; 
+        }
+        .container {
+            background-color: #292929; 
+            border-radius: 10px; 
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            max-width: 800px;
+            margin: auto;
+            position: relative;
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 20px; 
+            display: none; /* Initially hidden */
+        }
+        th, td { 
+            border: 1px solid #ddd; 
+            padding: 8px; 
+            text-align: left; 
+        }
+        th { 
+            background-color: #444; 
+        }
+        label { 
+            margin-top: 10px; 
+            display: block; 
+            font-weight: bold; 
+            text-align: center; 
+        }
+        .file-input {
+            position: relative;
+            overflow: hidden;
+            display: flex; /* Use flexbox for centering */
+            justify-content: center; /* Center horizontally */
+            margin: 10px auto;
+        }
+        input[type="file"] {
+            font-size: 16px;
+            color: white; 
+            border: none; 
+            padding: 8px 10px; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            display: block; 
+            width: auto; 
+            transition: background-color 0.3s; 
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0; /* Hide the default input */
+            height: 100%;
+            width: 100%;
+        }
+        .custom-file-input {
+            background-color: #007bff; 
+            color: white; 
+            padding: 8px 10px; 
+            border-radius: 5px; 
+            text-align: center; 
+            cursor: pointer; 
+            display: inline-block;
+            width: auto; 
+            transition: background-color 0.3s; 
+        }
+        button {
+            background-color: #28a745; 
+            color: white; 
+            border: none; 
+            padding: 12px 20px; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            margin: 20px auto;
+            display: block; 
+            transition: background-color 0.3s; 
+            text-align: center;
+        }
+        button:hover {
+            background-color: #218838; 
+        }
+        #downloadButton {
+            background-color: #007bff; 
+            margin-top: 20px;
+            display: none; /* Initially hidden */
+        }
+        #downloadButton:hover {
+            background-color: #0056b3; 
+        }
     </style>
 </head>
 <body>
-    <h1>Upload Files to List Player UUIDs and Last Location</h1>
+    <div class="container">
+        <h1>Upload Files to List Player UUIDs and Last Location</h1>
 
-    <label for="usercacheInput">Upload usercache.json (Player UUIDs and Names):</label>
-    <input type="file" id="usercacheInput" accept=".json">
+        <label for="usercacheInput">Upload usercache.json (Player UUIDs and Names):</label>
+        <div class="file-input">
+            <label class="custom-file-input" for="usercacheInput">Choose File</label>
+            <input type="file" id="usercacheInput" accept=".json">
+        </div>
 
-    <label for="playerdataInput">Upload Playerdata ZIP (Contains .dat files):</label>
-    <input type="file" id="playerdataInput" accept=".zip">
+        <label for="playerdataInput">Upload Playerdata ZIP (Contains .dat files):</label>
+        <div class="file-input">
+            <label class="custom-file-input" for="playerdataInput">Choose File</label>
+            <input type="file" id="playerdataInput" accept=".zip">
+        </div>
 
-    <button onclick="processFiles()">Upload and Display</button>
+        <button onclick="processFiles()">Upload and Display</button>
+        <button id="downloadButton" onclick="downloadTable()">Download as TXT</button>
 
-    <table id="outputTable">
-        <thead>
-            <tr>
-                <th>UUID</th>
-                <th>Username</th>
-                <th>Last Location</th>
-            </tr>
-        </thead>
-        <tbody id="outputBody">
-        </tbody>
-    </table>
+        <table id="outputTable">
+            <thead>
+                <tr>
+                    <th>UUID</th>
+                    <th>Username</th>
+                    <th>Last Location</th>
+                </tr>
+            </thead>
+            <tbody id="outputBody">
+            </tbody>
+        </table>
+    </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.6.0/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/nbt-js/1.0.0/nbt.min.js"></script>
     <script>
+        // Ensure the nbt library is loaded
+        if (typeof nbt === 'undefined') {
+            console.error('NBT library not loaded. Please check the URL and network connection.');
+        }
+
         async function processFiles() {
             const usercacheInput = document.getElementById('usercacheInput');
             const playerdataInput = document.getElementById('playerdataInput');
             const outputBody = document.getElementById('outputBody');
+            const downloadButton = document.getElementById('downloadButton');
+            const outputTable = document.getElementById('outputTable');
 
             if (!usercacheInput.files.length || !playerdataInput.files.length) {
                 alert('Please upload both JSON and ZIP files.');
@@ -78,6 +184,9 @@
                         row.appendChild(locationCell);
                         outputBody.appendChild(row);
                     });
+
+                    outputTable.style.display = 'table'; // Show table
+                    downloadButton.style.display = 'block'; // Show download button
                 } catch (error) {
                     alert('Invalid usercache.json format.');
                     console.error('Error parsing JSON:', error);
@@ -103,26 +212,48 @@
         }
 
         function readPlayerLocation(arrayBuffer) {
-            const dataView = new DataView(arrayBuffer);
-            const position = {};
-
-            // Read the last known position from the player's .dat file
-            try {
-                // The last position is stored in the NBT format, which starts after certain bytes
-                // Example structure for extracting XYZ (the exact byte offsets may vary based on your version)
-                const x = dataView.getFloat64(0x1C, true); // Example offset, adjust as necessary
-                const y = dataView.getFloat64(0x24, true);
-                const z = dataView.getFloat64(0x2C, true);
-                position.x = x;
-                position.y = y;
-                position.z = z;
-            } catch (error) {
-                console.error('Error reading player location:', error);
-                return 'Error reading location';
+            if (typeof nbt === 'undefined') {
+                console.error('NBT library is not defined.');
+                return 'Error: NBT library is not defined.';
             }
 
-            return `X: ${position.x.toFixed(2)}, Y: ${position.y.toFixed(2)}, Z: ${position.z.toFixed(2)}`;
+            const nbtData = nbt.parse(arrayBuffer);
+            let lastLocation = 'Unknown';
+
+            try {
+                const pos = nbtData.value['Pos'];
+                if (pos && pos.value.length === 3) {
+                    const x = pos.value[0].value;
+                    const y = pos.value[1].value;
+                    const z = pos.value[2].value;
+                    lastLocation = `X: ${x.toFixed(2)}, Y: ${y.toFixed(2)}, Z: ${z.toFixed(2)}`;
+                }
+            } catch (error) {
+                console.error('Error reading player location:', error);
+            }
+
+            return lastLocation;
+        }
+
+        function downloadTable() {
+            const outputBody = document.getElementById('outputBody');
+            let txtContent = "UUID\tUsername\tLast Location\n";
+
+            Array.from(outputBody.rows).forEach(row => {
+                const uuid = row.cells[0].textContent;
+                const username = row.cells[1].textContent;
+                const lastLocation = row.cells[2].textContent;
+                txtContent += `${uuid}\t${username}\t${lastLocation}\n`;
+            });
+
+            const blob = new Blob([txtContent], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'player_data.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         }
     </script>
-</body>
-</html>
