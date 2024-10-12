@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Player UUID and Last Location Viewer</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        label { margin-top: 10px; display: block; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>Upload Files to List Player UUIDs and Last Location</h1>
+
+    <label for="usercacheInput">Upload usercache.json (Player UUIDs and Names):</label>
+    <input type="file" id="usercacheInput" accept=".json">
+
+    <label for="playerdataInput">Upload Playerdata ZIP (Contains .dat files):</label>
+    <input type="file" id="playerdataInput" accept=".zip">
+
+    <button onclick="processFiles()">Upload and Display</button>
+
+    <table id="outputTable">
+        <thead>
+            <tr>
+                <th>UUID</th>
+                <th>Username</th>
+                <th>Last Location</th>
+            </tr>
+        </thead>
+        <tbody id="outputBody">
+        </tbody>
+    </table>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.6.0/jszip.min.js"></script>
+    <script>
+        async function processFiles() {
+            const usercacheInput = document.getElementById('usercacheInput');
+            const playerdataInput = document.getElementById('playerdataInput');
+            const outputBody = document.getElementById('outputBody');
+
+            if (!usercacheInput.files.length || !playerdataInput.files.length) {
+                alert('Please upload both JSON and ZIP files.');
+                return;
+            }
+
+            const usercacheFile = usercacheInput.files[0];
+            const playerdataFile = playerdataInput.files[0];
+
+            // Read usercache.json
+            const usercacheReader = new FileReader();
+            usercacheReader.onload = async function(event) {
+                const usercacheContent = event.target.result;
+                try {
+                    const usercacheData = JSON.parse(usercacheContent);
+                    const playerData = await processPlayerData(playerdataFile);
+                    outputBody.innerHTML = ''; // Clear any existing rows
+
+                    usercacheData.forEach(player => {
+                        const uuid = player.uuid;
+                        const name = player.name;
+                        const location = playerData[uuid] || 'Unknown';
+
+                        const row = document.createElement('tr');
+                        const uuidCell = document.createElement('td');
+                        const nameCell = document.createElement('td');
+                        const locationCell = document.createElement('td');
+
+                        uuidCell.textContent = uuid;
+                        nameCell.textContent = name;
+                        locationCell.textContent = location;
+
+                        row.appendChild(uuidCell);
+                        row.appendChild(nameCell);
+                        row.appendChild(locationCell);
+                        outputBody.appendChild(row);
+                    });
+                } catch (error) {
+                    alert('Invalid usercache.json format.');
+                    console.error('Error parsing JSON:', error);
+                }
+            };
+            usercacheReader.readAsText(usercacheFile);
+        }
+
+        async function processPlayerData(zipFile) {
+            const playerData = {};
+            const zip = await JSZip.loadAsync(zipFile);
+
+            const playerFiles = Object.keys(zip.files).filter(fileName => fileName.endsWith('.dat'));
+
+            for (let playerFile of playerFiles) {
+                const uuid = playerFile.split('/').pop().replace('.dat', '');
+                const fileData = await zip.file(playerFile).async('arraybuffer');
+                const lastLocation = readPlayerLocation(fileData);
+                playerData[uuid] = lastLocation;
+            }
+
+            return playerData;
+        }
+
+        function readPlayerLocation(arrayBuffer) {
+            const dataView = new DataView(arrayBuffer);
+            const position = {};
+
+            // Read the last known position from the player's .dat file
+            try {
+                // The last position is stored in the NBT format, which starts after certain bytes
+                // Example structure for extracting XYZ (the exact byte offsets may vary based on your version)
+                const x = dataView.getFloat64(0x1C, true); // Example offset, adjust as necessary
+                const y = dataView.getFloat64(0x24, true);
+                const z = dataView.getFloat64(0x2C, true);
+                position.x = x;
+                position.y = y;
+                position.z = z;
+            } catch (error) {
+                console.error('Error reading player location:', error);
+                return 'Error reading location';
+            }
+
+            return `X: ${position.x.toFixed(2)}, Y: ${position.y.toFixed(2)}, Z: ${position.z.toFixed(2)}`;
+        }
+    </script>
+</body>
+</html>

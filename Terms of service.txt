@@ -1,0 +1,23 @@
+Terms of Service
+
+
+
+By using this project, you agree to the following terms:
+
+1.
+No Claim of Ownership
+You may not claim this project as your own. Proper credit must be given to the original creator.
+
+2.
+Non-Commercial Use
+You may not use this project for commercial purposes without explicit permission. This includes selling or marketing this project or any modified versions as your own.
+
+3.
+Modifications
+You are free to fork or modify the project, but any significant changes must be clearly documented, and the original source must still be credited.
+
+4.Liability Disclaimer
+This project is provided "as is" without any guarantees or warranties. The creator is not liable for any damages that may occur through the use of this project.
+
+5.License Compliance
+Any use of this project must comply with the license specified in this repository. Failure to comply with these terms may result in legal action
